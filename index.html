@@ -1,1075 +1,1380 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-950">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vitality - Voice Fitness & Diet Tracker</title>
     
-    <!-- Mobile standalone app tags for an immersive full-screen experience -->
+    <!-- PWA & Mobile Standalone Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Vitality">
     
-    <title>Vitality - AI Voice-First Fitness & Diet Tracker</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* Slate 50 */
-        }
-        /* Custom scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-        /* Keyframe animations for recording pulse */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-            100% { transform: scale(0.95); opacity: 0.5; }
-        }
-        .recording-pulse {
-            animation: pulse-ring 1.5s infinite ease-in-out;
-        }
-    </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="h-full text-slate-100 font-sans selection:bg-indigo-500 selection:text-white flex flex-col overflow-x-hidden">
 
-    <!-- Navbar Section -->
-    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center gap-2">
-                        <i class="fa-solid fa-heart-pulse text-indigo-600 text-2xl"></i>
-                        <span class="font-bold text-xl tracking-tight text-slate-900">Vitality <span class="text-xs bg-indigo-100 text-indigo-700 font-semibold px-2 py-0.5 rounded-full ml-1">AI Voice</span></span>
-                    </div>
-                </div>
-                <!-- Navbar action controls -->
-                <div class="flex items-center space-x-2 md:space-x-3">
-                    <!-- Dynamic Cloud Sync Indicator Badge -->
-                    <span id="cloud-sync-badge" class="text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 bg-slate-100 text-slate-500">
-                        <i class="fa-solid fa-spinner fa-spin mr-0.5"></i> Connecting
-                    </span>
-                    <button id="btn-reset-data" class="text-sm text-slate-500 hover:text-red-600 transition-colors hidden md:inline-flex items-center gap-1" title="Reset all data for demo purposes">
-                        <i class="fa-solid fa-trash-can"></i> Reset Data
-                    </button>
-                    <div class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full hidden sm:block">
-                        <span>Today: </span><span id="current-date-display" class="font-bold text-indigo-600"></span>
-                    </div>
-                </div>
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-heart-pulse text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Vitality</h1>
+                <p class="text-[10px] text-indigo-400 font-medium tracking-wider uppercase">Voice Companion</p>
             </div>
         </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
-        
-        <!-- 1. AI Voice/Text Main Dashboard Module -->
-        <section class="bg-gradient-to-r from-indigo-900 to-slate-950 text-white rounded-2xl shadow-md p-6 flex flex-col gap-4 relative overflow-hidden">
-            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="flex items-center space-x-2">
+            <!-- API Key Status and Setup -->
+            <button id="btn-api-key" onclick="openApiKeyModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 transition border border-slate-700 text-slate-300">
+                <i id="api-key-icon" class="fa-solid fa-key text-amber-500"></i>
+                <span id="api-key-status">Setup API Key</span>
+            </button>
+
+            <!-- Sync Indicator -->
+            <div id="sync-badge" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-indigo-950/50 border border-indigo-800 text-indigo-300">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Active Session</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Scrollable Container -->
+    <main class="flex-1 overflow-y-auto px-4 py-6 max-w-5xl mx-auto w-full space-y-6 pb-24">
+
+        <!-- 1. AI Assistant Voice & Text Logger (At the Top) -->
+        <section class="bg-gradient-to-br from-indigo-900/60 to-slate-900/90 rounded-2xl border border-indigo-500/20 p-5 shadow-xl relative overflow-hidden backdrop-blur-sm">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
             
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                        <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold">AI Assistant Voice & Text Logger</h2>
-                        <p class="text-xs text-indigo-200">Dictate or write any combination of food, exercise, or weight logs.</p>
-                    </div>
-                </div>
-                <span class="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1.5 font-medium">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Auto-Formatting Active
-                </span>
-            </div>
-
-            <!-- Main Input Container -->
-            <div class="relative mt-2">
-                <textarea id="ai-dictation-input" rows="3" 
-                    placeholder="Woke up at 210 pounds, had a slice of sourdough toast buttered and a grande latte coffee for breakfast."
-                    class="w-full bg-slate-900/60 border border-slate-700 rounded-xl py-3 pl-4 pr-32 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm md:text-base resize-none"></textarea>
-                
-                <!-- Speech and Action Buttons docked inside input -->
-                <div class="absolute bottom-3 right-3 flex items-center gap-2">
-                    <button type="button" id="btn-dictation-toggle" title="Click to speak your log"
-                        class="h-10 w-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-colors flex items-center justify-center text-white relative focus:outline-none">
-                        <i id="mic-icon" class="fa-solid fa-microphone text-lg"></i>
-                        <span id="recording-indicator" class="hidden absolute inset-0 rounded-lg border-2 border-red-500 recording-pulse"></span>
-                    </button>
-                    <button type="button" id="btn-ai-process"
-                        class="h-10 px-4 rounded-lg bg-indigo-500 hover:bg-indigo-400 font-semibold text-sm transition-colors flex items-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-bolt"></i> Parse
-                    </button>
-                </div>
-            </div>
-
-            <!-- Speech Helper Guidelines -->
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                <span class="font-semibold text-indigo-300">Try dictating:</span>
-                <span class="bg-slate-900/40 px-2 py-1 rounded border border-slate-800 cursor-pointer hover:bg-slate-900/60 transition-colors demo-prompt">"Had a banana and black coffee yesterday"</span>
-                <span class="bg-slate-900/40 px-2 py-1 rounded border border-slate-800 cursor-pointer hover:bg-slate-900/60 transition-colors demo-prompt">"Deadlifted 5 sets at 250 lbs"</span>
-                <span class="bg-slate-900/40 px-2 py-1 rounded border border-slate-800 cursor-pointer hover:bg-slate-900/60 transition-colors demo-prompt">"Woke up at 210 pounds, had a slice of sourdough toast buttered and a grande latte coffee for breakfast."</span>
-            </div>
-
-            <!-- Populated dynamically via JS when AI extracts details, offering review before saving -->
-            <div id="draft-review-card" class="hidden bg-slate-900 border border-indigo-500/40 rounded-xl p-4 mt-2 transition-all">
-                <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-                    <span class="text-xs font-bold uppercase text-indigo-400 tracking-wider flex items-center gap-1">
-                        <i class="fa-solid fa-magnifying-glass-chart"></i> AI Parsed Draft Logs
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="flex h-2.5 w-2.5 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
                     </span>
-                    <span class="text-xs text-slate-400" id="draft-parsed-date">Target Date: Today</span>
+                    <h2 class="text-sm font-semibold text-indigo-200 tracking-wide uppercase">AI Voice &amp; Text Logger</h2>
                 </div>
+                <span class="text-xs text-indigo-300 bg-indigo-950/60 border border-indigo-800/60 px-2 py-0.5 rounded-full font-mono">Gemini-2.5-Flash</span>
+            </div>
+
+            <!-- Single Quick Logging Text Area wrapper -->
+            <div class="relative bg-slate-950/80 rounded-xl border border-slate-800 focus-within:border-indigo-500/50 transition-all p-2.5">
+                <textarea id="ai-dictation-input" rows="3" 
+                    placeholder="E.g. Woke up at 210 pounds, had a slice of sourdough toast buttered and a grande latte coffee for breakfast."
+                    class="w-full bg-transparent border-0 ring-0 focus:ring-0 outline-none text-sm text-slate-100 placeholder-slate-500 resize-none"></textarea>
                 
-                <div class="space-y-3" id="draft-list-container">
-                    <!-- Javascript will append items here -->
-                </div>
-
-                <div class="flex items-center justify-end gap-3 border-t border-slate-800 pt-3 mt-3">
-                    <button id="btn-draft-cancel" class="text-xs text-slate-400 hover:text-white font-medium px-3 py-1.5 transition-colors">
-                        Clear Draft
-                    </button>
-                    <button id="btn-draft-commit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow-md transition-colors flex items-center gap-1.5">
-                        <i class="fa-solid fa-check"></i> Commit to Journal
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 2. Dynamic summary statistics based on active selected date -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Calorie Goal -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider">Net Calories (Selected Day)</h3>
-                    <i class="fa-solid fa-fire text-orange-500"></i>
-                </div>
-                <div class="mt-auto">
-                    <p class="text-3xl font-bold text-slate-900" id="summary-net-calories">0</p>
-                    <p class="text-xs text-slate-500 mt-1">In - Out</p>
-                </div>
-            </div>
-
-            <!-- Calories In -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col">
-                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider">Food (In)</h3>
-                    <i class="fa-solid fa-apple-whole text-emerald-500"></i>
-                </div>
-                <div class="mt-auto">
-                    <p class="text-3xl font-bold text-emerald-600" id="summary-calories-in">0 <span class="text-sm font-normal text-slate-500">kcal</span></p>
-                </div>
-            </div>
-
-             <!-- Calories Out -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col">
-                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider">Exercise (Out)</h3>
-                    <i class="fa-solid fa-dumbbell text-blue-500"></i>
-                </div>
-                <div class="mt-auto">
-                    <p class="text-3xl font-bold text-blue-600" id="summary-calories-out">0 <span class="text-sm font-normal text-slate-500">kcal</span></p>
-                </div>
-            </div>
-
-            <!-- Current Weight -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col">
-                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider">Weight (Selected Day)</h3>
-                    <i class="fa-solid fa-weight-scale text-indigo-500"></i>
-                </div>
-                <div class="mt-auto flex items-baseline gap-2">
-                    <p class="text-3xl font-bold text-slate-900" id="summary-weight">--</p>
-                    <p class="text-sm font-medium text-slate-500">lbs</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. Diet Journal and Exercise Journal Panel -->
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Food Logs Panel -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[320px]">
-                <div class="bg-emerald-50 px-5 py-3 border-b border-emerald-100 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-apple-whole text-emerald-600"></i>
-                        <h2 class="font-semibold text-emerald-800" id="diet-journal-header">Diet Journal</h2>
+                <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-900">
+                    <!-- Action Help Label -->
+                    <span class="text-[11px] text-slate-500 italic hidden sm:inline">Type or use the microphone to talk naturally...</span>
+                    
+                    <div class="flex items-center space-x-2 ml-auto">
+                        <!-- Microphone button -->
+                        <button id="btn-voice-mic" onclick="toggleVoiceInput()" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 transition flex items-center justify-center text-slate-300 relative group" title="Voice Input">
+                            <i id="mic-icon" class="fa-solid fa-microphone text-base"></i>
+                            <span id="recording-pulse" class="absolute inset-0 rounded-full bg-red-500/30 animate-ping hidden"></span>
+                        </button>
+                        
+                        <!-- Main Parse Button -->
+                        <button id="btn-parse-ai" onclick="parsePromptWithAI()" class="px-5 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs tracking-wide transition flex items-center space-x-2 shadow-lg shadow-indigo-600/20">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Analyze Entry</span>
+                        </button>
                     </div>
-                    <span id="food-total-badge" class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">0 kcal</span>
-                </div>
-                <div class="p-4 overflow-y-auto flex-grow">
-                    <ul id="list-food" class="space-y-2 text-sm">
-                        <!-- Foods logged appear here -->
-                    </ul>
                 </div>
             </div>
 
-            <!-- Exercise Logs Panel -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[320px]">
-                <div class="bg-blue-50 px-5 py-3 border-b border-blue-100 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-dumbbell text-blue-600"></i>
-                        <h2 class="font-semibold text-blue-800" id="exercise-journal-header">Exercise Journal</h2>
+            <!-- Clickable Example Prompt -->
+            <div class="mt-3">
+                <button onclick="useExamplePrompt()" class="text-left text-xs text-indigo-300/80 hover:text-indigo-200 transition bg-indigo-950/30 border border-indigo-900/30 px-3 py-1.5 rounded-lg flex items-center space-x-1.5">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span><strong>Try:</strong> "Woke up at 210 pounds, had a slice of sourdough toast buttered and a grande latte coffee for breakfast."</span>
+                </button>
+            </div>
+
+            <!-- Loader / Transcription Wait Screen -->
+            <div id="ai-processing-loader" class="hidden mt-4 p-4 bg-slate-950/85 border border-indigo-950 rounded-xl flex items-center justify-center space-x-3">
+                <div class="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <span id="loader-message" class="text-xs text-indigo-200 font-medium">Gemini is analyzing your entry...</span>
+            </div>
+
+            <!-- Proposed Draft Preview UI Container -->
+            <div id="draft-card" class="hidden mt-4 p-4 bg-slate-950/90 border-2 border-indigo-500/40 rounded-xl shadow-2xl relative animate-fade-in">
+                <div class="absolute top-3 right-3 text-[10px] text-indigo-400 font-bold tracking-wider uppercase bg-indigo-950/60 px-2 py-0.5 rounded-md">Draft Preview</div>
+                <h3 class="text-xs font-bold text-slate-300 mb-3 flex items-center space-x-1">
+                    <i class="fa-solid fa-clipboard-check text-indigo-400"></i>
+                    <span>Extracted Journal Log Details</span>
+                </h3>
+                
+                <div class="space-y-3">
+                    <!-- Target Date -->
+                    <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-lg text-xs">
+                        <span class="text-slate-400">Target Log Date:</span>
+                        <span id="draft-date" class="font-bold text-slate-100 font-mono">Today</span>
                     </div>
-                    <span id="exercise-total-badge" class="text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">0 kcal</span>
+
+                    <!-- Target Weight -->
+                    <div id="draft-weight-row" class="hidden justify-between items-center bg-slate-900/50 p-2 rounded-lg text-xs">
+                        <span class="text-slate-400">Weight Reading:</span>
+                        <span id="draft-weight" class="font-bold text-amber-400">--</span>
+                    </div>
+
+                    <!-- Extracted Foods -->
+                    <div id="draft-foods-list" class="space-y-1.5 hidden">
+                        <div class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-1">Foods Extracted</div>
+                        <div id="draft-foods-container" class="space-y-1"></div>
+                    </div>
+
+                    <!-- Extracted Exercises -->
+                    <div id="draft-exercises-list" class="space-y-1.5 hidden">
+                        <div class="text-[10px] font-bold text-violet-300 uppercase tracking-wider mb-1">Exercises Extracted</div>
+                        <div id="draft-exercises-container" class="space-y-1"></div>
+                    </div>
                 </div>
-                <div class="p-4 overflow-y-auto flex-grow">
-                    <ul id="list-exercise" class="space-y-2 text-sm">
-                         <!-- Exercises logged appear here -->
-                    </ul>
+
+                <!-- Control Buttons to Save or Clear Draft -->
+                <div class="flex items-center justify-end space-x-2 mt-4 pt-3 border-t border-slate-900">
+                    <button onclick="clearDraft()" class="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 transition">Discard</button>
+                    <button onclick="commitDraft()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-emerald-600/10">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Commit to Journal</span>
+                    </button>
                 </div>
             </div>
         </section>
 
-        <!-- 4. Date Controller Panel -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-2">
-                <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                    <i class="fa-solid fa-calendar-days text-lg"></i>
+        <!-- 2. Core Statistics Summary Row (Immediate second) -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- Calorie Balance Gauge -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-slate-400">Net Balance</span>
+                    <span class="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </span>
                 </div>
-                <div>
-                    <span class="font-semibold text-slate-800 block text-sm">Active Journal Date</span>
-                    <span class="text-xs text-slate-500">View and log entries for this specific day</span>
+                <div class="mt-2.5">
+                    <div id="summary-net" class="text-2xl font-black tracking-tight text-white">0 <span class="text-xs font-normal text-slate-500">kcal</span></div>
+                    <p id="summary-net-label" class="text-[10px] font-medium text-emerald-400 mt-0.5">Perfect Balance</p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <button id="btn-prev-day" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors" title="Go to previous day">
+
+            <!-- Calories Consumed -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-slate-400">Food (In)</span>
+                    <span class="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-xs">
+                        <i class="fa-solid fa-apple-whole"></i>
+                    </span>
+                </div>
+                <div class="mt-2.5">
+                    <div id="summary-in" class="text-2xl font-black tracking-tight text-white">0 <span class="text-xs font-normal text-slate-500">kcal</span></div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                        <div id="summary-in-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calories Burned -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-slate-400">Exercise (Out)</span>
+                    <span class="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xs">
+                        <i class="fa-solid fa-dumbbell"></i>
+                    </span>
+                </div>
+                <div class="mt-2.5">
+                    <div id="summary-out" class="text-2xl font-black tracking-tight text-white font-mono">0 <span class="text-xs font-normal text-slate-500">kcal</span></div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                        <div id="summary-out-bar" class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Weight Reading -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-slate-400">Day's Weight</span>
+                    <span class="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 text-xs">
+                        <i class="fa-solid fa-weight-scale"></i>
+                    </span>
+                </div>
+                <div class="mt-2.5">
+                    <div id="summary-weight" class="text-2xl font-black tracking-tight text-white font-mono">-- <span class="text-xs font-normal text-slate-500">lbs</span></div>
+                    <p id="summary-weight-change" class="text-[10px] text-slate-500 mt-0.5">No logged weight changes today</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Side-by-Side Dynamic Logs/Journals Row (Third) -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Diet Journal Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col min-h-[250px]">
+                <div class="bg-slate-800/40 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-apple-whole text-emerald-400"></i>
+                        <h3 id="diet-journal-title" class="text-sm font-semibold text-slate-200">Diet Journal</h3>
+                    </div>
+                    <span id="diet-kcal-badge" class="text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-900 px-2 py-0.5 rounded-full">0 kcal</span>
+                </div>
+                <!-- Dynamic diet list items -->
+                <div id="diet-list" class="flex-1 overflow-y-auto p-4 divide-y divide-slate-800/60 space-y-3 max-h-[300px]">
+                    <div class="text-center py-8 text-slate-500 text-xs flex flex-col items-center space-y-2">
+                        <i class="fa-solid fa-utensils text-2xl text-slate-700"></i>
+                        <span>No diet entries logged today.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise Journal Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col min-h-[250px]">
+                <div class="bg-slate-800/40 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-dumbbell text-indigo-400"></i>
+                        <h3 id="exercise-journal-title" class="text-sm font-semibold text-slate-200">Exercise Journal</h3>
+                    </div>
+                    <span id="exercise-kcal-badge" class="text-xs font-bold text-indigo-400 bg-indigo-950/50 border border-indigo-900 px-2 py-0.5 rounded-full font-mono">0 kcal</span>
+                </div>
+                <!-- Dynamic exercise list items -->
+                <div id="exercise-list" class="flex-1 overflow-y-auto p-4 divide-y divide-slate-800/60 space-y-3 max-h-[300px]">
+                    <div class="text-center py-8 text-slate-500 text-xs flex flex-col items-center space-y-2">
+                        <i class="fa-solid fa-person-running text-2xl text-slate-700"></i>
+                        <span>No physical exercises logged today.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Global Calendar Navigation Controller (Fourth) -->
+        <section class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-2 w-full sm:w-auto justify-between">
+                <button onclick="changeActiveDate(-1)" class="w-9 h-9 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center transition">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
-                <input type="date" id="journal-date-picker" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
-                <button id="btn-next-day" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors" title="Go to next day">
+                
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar-day text-indigo-400"></i>
+                    <span id="active-date-label" class="text-sm font-bold text-white tracking-wide">Wednesday, May 20, 2026</span>
+                </div>
+                
+                <button onclick="changeActiveDate(1)" class="w-9 h-9 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center transition">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
-                <button id="btn-jump-today" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors">
-                    Today
-                </button>
+            </div>
+
+            <!-- Date Select Input Shortcut -->
+            <div class="flex items-center space-x-2 w-full sm:w-auto">
+                <span class="text-xs text-slate-400 hidden lg:inline">Go to:</span>
+                <input type="date" id="global-datepicker" onchange="onDatepickerChanged(this.value)" class="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg text-xs px-3 py-1.5 text-slate-200 outline-none w-full sm:w-auto font-mono">
+                <button onclick="setToday()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">Today</button>
             </div>
         </section>
 
-        <!-- 5. Manual override configuration forms (Optional Drawer) -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <button type="button" id="btn-toggle-manual" class="w-full px-5 py-3 flex items-center justify-between text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none">
-                <span class="text-sm font-semibold flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-indigo-500"></i> Manual Override Logs (Optional)
+        <!-- 5. Interactive Progress Analytics Grid (Chart) -->
+        <section class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-line text-indigo-400"></i>
+                        <span>Weight &amp; Calorie Trends Over Time</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Analyzing calories in, calories out, and weight correlation</p>
+                </div>
+                
+                <!-- Chart Horizon Selector -->
+                <div class="flex items-center space-x-1.5 bg-slate-950 p-1 border border-slate-800 rounded-lg self-start">
+                    <button id="chart-7" onclick="setChartRange(7)" class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-indigo-600 text-white transition">7 Days</button>
+                    <button id="chart-14" onclick="setChartRange(14)" class="px-2.5 py-1 text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200 transition">14 Days</button>
+                    <button id="chart-30" onclick="setChartRange(30)" class="px-2.5 py-1 text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200 transition">30 Days</button>
+                </div>
+            </div>
+
+            <!-- Chart Mounting Container -->
+            <div class="relative w-full h-[280px]">
+                <canvas id="analyticsChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 6. Manual Overrides Collapsible Accordion Drawer -->
+        <section class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+            <button onclick="toggleManualOverrideCollapse()" class="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-850 transition">
+                <span class="text-sm font-semibold text-slate-300 flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i>
+                    <span>Manual Log Overrides</span>
                 </span>
-                <i id="manual-toggle-chevron" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+                <i id="manual-chevron" class="fa-solid fa-chevron-down text-slate-500 transition-transform"></i>
             </button>
-            <div id="manual-forms-container" class="hidden border-t border-slate-200 p-5 bg-slate-50/50">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Food Manual Form -->
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3">Add Food Item</h3>
-                        <form id="form-food" class="space-y-3">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Date</label>
-                                <input type="date" id="food-date" required class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+
+            <div id="manual-collapsible-drawer" class="hidden border-t border-slate-800/80 p-4 bg-slate-950/40 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Manual Food Logger -->
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+                        <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1">
+                            <i class="fa-solid fa-utensils"></i>
+                            <span>Add Food Entry</span>
+                        </h4>
+                        
+                        <div class="space-y-2">
+                            <input type="text" id="food-name" placeholder="E.g. Sourdough Toast" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg text-xs p-2.5 outline-none text-slate-100">
+                            <input type="text" id="food-portion" placeholder="E.g. 1 slice" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg text-xs p-2.5 outline-none text-slate-100">
+                            <div class="relative">
+                                <input type="number" min="0" id="food-calories" placeholder="Calories (kcal)" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg text-xs p-2.5 pr-10 outline-none text-slate-100">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-500">kcal</span>
                             </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Food Item Name</label>
-                                <input type="text" id="food-name" required placeholder="e.g., Coke Zero" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Portion Size</label>
-                                <input type="text" id="food-portion" placeholder="e.g., 1 can" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Calories (kcal)</label>
-                                <input type="number" id="food-calories" required min="0" placeholder="0" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1.5 px-3 rounded-md text-xs transition-colors">
-                                Save Food
-                            </button>
-                        </form>
+                            <button onclick="manuallyAddFood()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">Save Food</button>
+                        </div>
                     </div>
 
-                    <!-- Exercise Manual Form -->
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Add Exercise</h3>
-                        <form id="form-exercise" class="space-y-3">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Date</label>
-                                <input type="date" id="exercise-date" required class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- Manual Workout Logger -->
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+                        <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-1">
+                            <i class="fa-solid fa-dumbbell"></i>
+                            <span>Add Workout Entry</span>
+                        </h4>
+                        
+                        <div class="space-y-2">
+                            <input type="text" id="exercise-name" placeholder="E.g. Running" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg text-xs p-2.5 outline-none text-slate-100">
+                            <input type="text" id="exercise-details" placeholder="E.g. 30 mins, 5 km" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg text-xs p-2.5 outline-none text-slate-100">
+                            <div class="relative">
+                                <input type="number" min="0" id="exercise-calories" placeholder="Calories Burned" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg text-xs p-2.5 pr-10 outline-none text-slate-100">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-500">kcal</span>
                             </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Activity</label>
-                                <input type="text" id="exercise-name" required placeholder="e.g., Running" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Duration / Details</label>
-                                <input type="text" id="exercise-details" placeholder="e.g., 5 sets @ 250 lbs or 5k" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Calories Burned (kcal)</label>
-                                <input type="number" id="exercise-calories" required min="0" placeholder="0" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1.5 px-3 rounded-md text-xs transition-colors">
-                                Save Exercise
-                            </button>
-                        </form>
+                            <button onclick="manuallyAddWorkout()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">Save Workout</button>
+                        </div>
                     </div>
 
-                    <!-- Weight Manual Form -->
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-xs font-bold text-indigo-800 uppercase tracking-wider mb-3">Log Weight</h3>
-                            <form id="form-weight" class="space-y-3">
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-500 mb-1">Date</label>
-                                    <input type="date" id="weight-date" required class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-500 mb-1">Weight (lbs)</label>
-                                    <input type="number" id="weight-value" required min="1" step="0.1" placeholder="e.g., 185.0" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                </div>
-                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 px-3 rounded-md text-xs transition-colors">
-                                    Update Weight
-                                </button>
-                            </form>
+                    <!-- Manual Weight Logger -->
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+                        <h4 class="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center space-x-1">
+                            <i class="fa-solid fa-weight-scale"></i>
+                            <span>Record Body Weight</span>
+                        </h4>
+                        
+                        <div class="space-y-2">
+                            <div class="relative">
+                                <input type="number" step="0.1" id="manual-weight-input" placeholder="Weight Value" class="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-lg text-xs p-2.5 pr-12 outline-none text-slate-100">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-500">lbs</span>
+                            </div>
+                            <button onclick="manuallyAddWeight()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition">Save Weight</button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- 6. Progress metrics and analysis chart -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mt-2">
-             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-slate-800">Progress Overview</h2>
-                <select id="chart-range" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
-                    <option value="7">Last 7 Days</option>
-                    <option value="14" selected>Last 14 Days</option>
-                    <option value="30">Last 30 Days</option>
-                </select>
-            </div>
-            
-            <div class="w-full h-[400px] relative">
-                <canvas id="progressChart"></canvas>
+                <!-- Database Maintenance -->
+                <div class="flex items-center justify-end pt-3 border-t border-slate-800/80">
+                    <button onclick="confirmResetAllData()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950/20 hover:bg-rose-900/30 border border-rose-900/50 text-rose-300 transition">
+                        <i class="fa-solid fa-trash-can mr-1.5"></i>Reset Local Database
+                    </button>
+                </div>
             </div>
         </section>
 
     </main>
 
-    <!-- Custom overlay used instead of standard browser popups -->
-    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 transform transition-all">
-            <h3 id="modal-title" class="text-lg font-bold text-slate-900 mb-2">Message</h3>
-            <p id="modal-message" class="text-slate-600 mb-6 text-sm"></p>
-            <button id="modal-close" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm">
-                OK
-            </button>
+    <!-- Footer Bar -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-3 text-center text-slate-500 text-xs">
+        <span>© 2026 Vitality Inc. Powered by Gemini Cloud Core API.</span>
+    </footer>
+
+    <!-- Interactive General Notification Toast -->
+    <div id="toast" class="fixed bottom-4 right-4 z-50 transform translate-y-12 opacity-0 bg-slate-900 border border-indigo-500 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 transition-all duration-300 max-w-sm pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message" class="text-xs font-semibold text-slate-200">Changes Saved Successfully!</span>
+    </div>
+
+    <!-- API Key Entry Modal -->
+    <div id="api-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-start">
+                <div class="space-y-1">
+                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-key text-amber-500"></i>
+                        <span>Enter Gemini API Key</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">To utilize voice transcription and smart analysis on your standalone site, you'll need your own API Key.</p>
+                </div>
+                <button onclick="closeApiKeyModal()" class="text-slate-500 hover:text-slate-300 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg text-sm p-3 outline-none text-slate-100 font-mono">
+                
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-850 space-y-2">
+                    <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">How to get a free key:</div>
+                    <ol class="list-decimal list-inside text-[11px] text-slate-400 space-y-1 leading-relaxed">
+                        <li>Visit <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 hover:underline">Google AI Studio</a></li>
+                        <li>Click "Get API Key" or "Create API Key"</li>
+                        <li>Generate a free key and paste it above!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 pt-2">
+                <button onclick="closeApiKeyModal()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition">Cancel</button>
+                <button onclick="saveApiKey()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">Save Key</button>
+            </div>
         </div>
     </div>
 
-    <!-- Firebase SDK Imports and Core Engine Core Module -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- General Purpose Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-white">Reset Database?</h3>
+                <p class="text-xs text-slate-400 mt-1 leading-relaxed">This will permanently clear all daily calorie records and weight entries stored locally in this browser.</p>
+            </div>
+            <div class="flex items-center justify-center space-x-2 pt-2">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition">Cancel</button>
+                <button onclick="executeResetData()" class="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition">Reset Everything</button>
+            </div>
+        </div>
+    </div>
 
-        // Global state and initialization definitions
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vitality-tracker';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    <!-- Alert Dialog -->
+    <div id="alert-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-center space-y-4">
+            <div id="alert-icon-wrapper" class="w-12 h-12 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto text-xl">
+                <i id="alert-icon" class="fa-solid fa-info-circle"></i>
+            </div>
+            <div>
+                <h3 id="alert-title" class="text-sm font-bold text-white">Information</h3>
+                <p id="alert-text" class="text-xs text-slate-400 mt-1 leading-relaxed">Alert message content here.</p>
+            </div>
+            <div class="pt-2">
+                <button onclick="closeAlertModal()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">OK</button>
+            </div>
+        </div>
+    </div>
 
-        let db = null;
-        let auth = null;
-        let userId = null;
+    <!-- JavaScript Application Controllers -->
+    <script>
+        // Core Date & Storage State Variable Initialization
+        let selectedDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        let chartRange = 7; // defaults to 7 days view
+        let analyticsChartInstance = null;
+        let isManualDrawerOpen = false;
 
-        // In-memory mirroring object representing overall app state
-        let appData = {
-            food: {},     // { '2026-05-20': [{name, portion, calories}, ...] }
-            exercise: {}, // { '2026-05-20': [{name, details, calories}, ...] }
-            weight: {}    // { '2026-05-20': 175.5 }
+        // Current temporary data structured log dictionary
+        let vitalityDatabase = {};
+
+        // Proposed parsed Draft elements holder
+        let currentDraft = null;
+
+        // Recording Audio Variables
+        let audioRecorder = null;
+        let recordedAudioChunks = [];
+        let isRecordingAudio = false;
+
+        // On Page Load: Read local cache and initialize view
+        window.onload = function() {
+            loadDatabaseFromCache();
+            checkAndApplyLoadedApiKey();
+            setToday();
+            initializeChart();
+            renderDashboard();
         };
 
-        // Date selection states
-        let selectedDate = ""; 
-        let draftParsedResult = null;
-        let progressChartInstance = null;
-        let speechRecognition = null;
-        let isRecording = false;
-
-        const getTodayString = () => {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-
-        const formatDateDisplay = (dateString) => {
-            if (!dateString) return "Unknown Date";
-            const options = { weekday: 'short', month: 'short', day: 'numeric' };
-            const parts = dateString.split('-');
-            if (parts.length !== 3) return dateString;
-            const [y, m, d] = parts;
-            return new Date(y, m-1, d).toLocaleDateString(undefined, options);
-        };
-
-        const normalizeDateString = (dateInput) => {
-            const todayStr = getTodayString();
-            if (!dateInput) return todayStr;
+        // --- CUSTOM LOCAL STORAGE HANDLING ---
+        function loadDatabaseFromCache() {
+            const cached = localStorage.getItem('vitality_tracker_db');
+            if (cached) {
+                try {
+                    vitalityDatabase = JSON.parse(cached);
+                } catch(e) {
+                    vitalityDatabase = {};
+                }
+            }
             
-            if (dateInput instanceof Date) {
-                const year = dateInput.getFullYear();
-                const month = String(dateInput.getMonth() + 1).padStart(2, '0');
-                const day = String(dateInput.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
+            // Seed sample logs if database is empty to let chart look amazing instantly
+            if (Object.keys(vitalityDatabase).length === 0) {
+                seedRealisticHistoricalData();
             }
+        }
 
-            const cleanStr = String(dateInput).trim().toLowerCase();
-            if (cleanStr === 'today') return todayStr;
+        function saveDatabaseToCache() {
+            localStorage.setItem('vitality_tracker_db', JSON.stringify(vitalityDatabase));
+            syncWithVisualComponents();
+        }
 
-            const isoMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (isoMatch) {
-                return isoMatch[0];
-            }
-
-            const d = new Date(dateInput);
-            if (!isNaN(d.getTime())) {
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            }
-
-            return todayStr;
-        };
-
-        const showModal = (title, message) => {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-message').textContent = message;
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        };
-
-        document.getElementById('modal-close').addEventListener('click', () => {
-            document.getElementById('modal-overlay').classList.add('hidden');
-        });
-
-        const setupCloudSync = () => {
-            if (!firebaseConfig) {
-                updateCloudSyncBadge("Local Mode", "bg-amber-100 text-amber-700 border border-amber-200");
-                generateSampleData();
-                updateDashboard();
-                return;
-            }
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                updateCloudSyncBadge("Connecting...", "bg-slate-100 text-slate-600 animate-pulse");
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        updateCloudSyncBadge("Cloud Connected", "bg-emerald-100 text-emerald-800 border border-emerald-200");
-                        initRealtimeFirestoreSync();
-                    } else {
-                        // Priority Sign In matching Rule 3
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken).catch(async () => {
-                                await signInAnonymously(auth);
-                            });
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    }
-                });
-            } catch (err) {
-                console.error("Firebase Initialization Failure:", err);
-                updateCloudSyncBadge("Offline Mode", "bg-red-100 text-red-800 border border-red-200");
-                generateSampleData();
-                updateDashboard();
-            }
-        };
-
-        const updateCloudSyncBadge = (text, classes) => {
-            const badge = document.getElementById('cloud-sync-badge');
-            badge.className = `text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 ${classes}`;
-            let icon = '<i class="fa-solid fa-cloud"></i>';
-            if (text.includes("Connecting")) {
-                icon = '<i class="fa-solid fa-spinner fa-spin mr-0.5"></i>';
-            } else if (text.includes("Offline")) {
-                icon = '<i class="fa-solid fa-cloud-slash"></i>';
-            }
-            badge.innerHTML = `${icon} ${text}`;
-        };
-
-        const initRealtimeFirestoreSync = () => {
-            if (!db || !userId) return;
-
-            // STRICT PATH: /artifacts/{appId}/users/{userId}/days (Rule 1)
-            const daysCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'days');
-
-            let isFirstLoad = true;
-
-            // Listen to data collections in real-time (Rule 2 simple query)
-            onSnapshot(daysCollectionRef, async (snapshot) => {
-                // If cloud data is completely empty and it is the first launch, seed standard sample metrics
-                if (snapshot.empty && isFirstLoad) {
-                    isFirstLoad = false;
-                    generateSampleData();
-                    // Batch write initial seed data to Cloud
-                    for (const date in appData.food) {
-                        await saveDayToCloud(date);
-                    }
-                    updateDashboard();
-                    return;
-                }
-
-                isFirstLoad = false;
-
-                // Sync snapshot updates with locally mirrored cache
-                appData = { food: {}, exercise: {}, weight: {} };
-                snapshot.forEach((doc) => {
-                    const date = doc.id;
-                    const data = doc.data();
-                    if (data) {
-                        appData.food[date] = data.food || [];
-                        appData.exercise[date] = data.exercise || [];
-                        if (data.weight !== undefined && data.weight !== null) {
-                            appData.weight[date] = data.weight;
-                        }
-                    }
-                });
-
-                updateDashboard();
-            }, (error) => {
-                console.error("Cloud synchronizer snapshot error:", error);
-                updateCloudSyncBadge("Sync Error", "bg-rose-100 text-rose-800 border border-rose-200");
-            });
-        };
-
-        const saveDayToCloud = async (date) => {
-            if (!db || !userId) return;
-
-            // Strict target document path based on RULE 1
-            const dayDocRef = doc(db, 'artifacts', appId, 'users', userId, 'days', date);
+        // --- DUMMY PROGRESS HISTORICAL SEEDING ---
+        function seedRealisticHistoricalData() {
+            const now = new Date();
+            let baseWeight = 215.5; // Starts heavier, progressive weight loss
             
-            try {
-                await setDoc(dayDocRef, {
-                    food: appData.food[date] || [],
-                    exercise: appData.exercise[date] || [],
-                    weight: appData.weight[date] !== undefined ? appData.weight[date] : null
-                });
-            } catch (err) {
-                console.error("Failed to commit day data to cloud:", err);
-            }
-        };
-
-        const initSpeechRecognition = () => {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                console.warn("Speech recognition is not natively supported in this browser.");
-                return;
-            }
-
-            speechRecognition = new SpeechRecognition();
-            speechRecognition.continuous = false;
-            speechRecognition.interimResults = false;
-            speechRecognition.lang = 'en-US';
-
-            speechRecognition.onstart = () => {
-                isRecording = true;
-                const micIcon = document.getElementById('mic-icon');
-                micIcon.className = "fa-solid fa-microphone-lines text-lg text-red-500 animate-pulse";
-                document.getElementById('recording-indicator').classList.remove('hidden');
-            };
-
-            speechRecognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                const textInput = document.getElementById('ai-dictation-input');
-                if (textInput.value) {
-                    textInput.value += " " + transcript;
-                } else {
-                    textInput.value = transcript;
-                }
-            };
-
-            speechRecognition.onerror = (event) => {
-                console.error("Speech Recognition Error:", event.error);
-                if (event.error === 'not-allowed') {
-                    showModal("Microphone Access Required", "Please allow microphone access in your browser settings to dictate your meals.");
-                } else {
-                    showModal("Dictation Issue", `There was an error with speech recognition: ${event.error}`);
-                }
-                resetMicUI();
-            };
-
-            speechRecognition.onend = () => {
-                resetMicUI();
-            };
-        };
-
-        const resetMicUI = () => {
-            isRecording = false;
-            const micIcon = document.getElementById('mic-icon');
-            micIcon.className = "fa-solid fa-microphone text-lg";
-            document.getElementById('recording-indicator').classList.add('hidden');
-        };
-
-        const toggleRecording = () => {
-            if (!speechRecognition) {
-                showModal("Speech Not Supported", "This browser does not support native voice transcription. Please type your meal or exercise logs directly into the text box.");
-                return;
-            }
-
-            if (isRecording) {
-                speechRecognition.stop();
-            } else {
-                speechRecognition.start();
-            }
-        };
-
-        const parseLogsWithAI = async () => {
-            const textInput = document.getElementById('ai-dictation-input');
-            const prompt = textInput.value.trim() || textInput.placeholder;
-            const processBtn = document.getElementById('btn-ai-process');
-
-            const originalBtnContent = processBtn.innerHTML;
-            processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Parsing';
-            processBtn.disabled = true;
-
-            // Fetch last known weight to feed to Gemini context
-            let currentWeightForAI = 180.0; 
-            const weightDates = Object.keys(appData.weight).sort();
-            if (weightDates.length > 0) {
-                currentWeightForAI = appData.weight[weightDates[weightDates.length - 1]];
-            }
-
-            const todayStr = getTodayString();
-
-            try {
-                const systemPrompt = `You are a helpful, professional, world-class AI fitness and nutrition assistant. Your task is to analyze the user's raw diet, weight, or exercise input and organize it into standard structured data.
+            for (let i = 29; i >= 0; i--) {
+                const targetDay = new Date(now);
+                targetDay.setDate(now.getDate() - i);
+                const dayString = targetDay.toISOString().split('T')[0];
                 
-                The current date is exactly ${todayStr}.
-                The user's current weight is ${currentWeightForAI} lbs.
+                // Weight slightly moves down, modeling real progress
+                baseWeight -= (Math.random() * 0.25) - 0.1;
                 
-                Standardization and Calculation Rules:
-                1. DATES: Parse relative time terms if present (e.g., 'yesterday' -> calculate YYYY-MM-DD from ${todayStr}, 'this morning' -> ${todayStr}, 'on Monday' -> compute corresponding YYYY-MM-DD). If no clear date is given, default to "${todayStr}".
-                2. FOOD: Standardize raw descriptions (e.g. 'one can of coke zero' -> name: 'Coke Zero', portion: '1 can (12 oz)', calories: 0. 'a banana' -> name: 'Banana', portion: '1 medium', calories: 105).
-                3. EXERCISE: Standardize activities. Compute a precise description of duration, sets, reps, distance, or weight load as standardized details (e.g., 'deadlifted 5 sets at 250 lbs' -> name: 'Deadlifts', details: '5 sets @ 250 lbs', 'ran 5k' -> name: 'Running', details: '5 km run'). Estimate MET (Metabolic Equivalent) and calculate total calorie burn based EXACTLY on the user's weight (${currentWeightForAI} lbs). If no weight is mentioned, still use ${currentWeightForAI} lbs for calculations. Factor in physics (e.g. running at 300 lbs burns significantly more than at 200 lbs).
-                4. WEIGHT: If the user dictates a weight check-in (e.g., 'I weigh 182.4 lbs', 'Woke up at 250 pounds', or 'Woke up at 175.5'), extract that weight as a floating-point number.
-                
-                Return JSON schema matching this format:
-                {
-                    "targetDate": "YYYY-MM-DD",
-                    "foods": [
-                        { "name": "Standardized Food Item", "portion": "Standard Portions (e.g. 1 medium, 1 slice)", "calories": integer_calories }
+                const randomFoodKcal = Math.floor(Math.random() * 400) + 1800; // 1800 - 2200
+                const randomBurnKcal = Math.floor(Math.random() * 300) + 300;   // 300 - 600
+
+                vitalityDatabase[dayString] = {
+                    weight: parseFloat(baseWeight.toFixed(1)),
+                    foods: [
+                        { name: "Balanced Meals", portion: "Standard Routine", calories: randomFoodKcal }
                     ],
-                    "exercises": [
-                        { "name": "Standardized Activity Title", "details": "Duration/Intensity (e.g. 5 sets @ 250 lbs, 30 mins, 5 km run)", "calories": integer_calories_burned }
-                    ],
-                    "weight": null_or_float_weight
-                }`;
-
-                const payload = {
-                    contents: [{ parts: [{ text: `SYSTEM CONTEXT: ${systemPrompt}\n\nUSER INPUT: "${prompt}"` }] }],
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                "targetDate": { "type": "STRING" },
-                                "foods": {
-                                    "type": "ARRAY",
-                                    "items": {
-                                        "type": "OBJECT",
-                                        "properties": {
-                                            "name": { "type": "STRING" },
-                                            "portion": { "type": "STRING" },
-                                            "calories": { "type": "INTEGER" }
-                                        },
-                                        "required": ["name", "portion", "calories"]
-                                    }
-                                },
-                                "exercises": {
-                                    "type": "ARRAY",
-                                    "items": {
-                                        "type": "OBJECT",
-                                        "properties": {
-                                            "name": { "type": "STRING" },
-                                            "details": { "type": "STRING" },
-                                            "calories": { "type": "INTEGER" }
-                                        },
-                                        "required": ["name", "details", "calories"]
-                                    }
-                                },
-                                "weight": { "type": "NUMBER" }
-                            },
-                            "required": ["targetDate", "foods", "exercises"]
-                        }
-                    }
+                    exercises: [
+                        { name: "Physical Activity", details: "Cardio & Strength mix", calories: randomBurnKcal }
+                    ]
                 };
-
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                
-                if (result.error) {
-                    throw new Error(`API Error (${result.error.code}): ${result.error.message}`);
-                }
-
-                let text = "";
-                if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
-                    text = result.candidates[0].content.parts[0].text;
-                } else {
-                    throw new Error("No responses extracted from AI processing.");
-                }
-
-                const cleanJsonText = text.replace(/```json|```/gi, "").trim();
-                const parsedData = JSON.parse(cleanJsonText);
-                
-                parsedData.targetDate = normalizeDateString(parsedData.targetDate);
-                
-                showDraftReview(parsedData);
-
-            } catch (err) {
-                console.error("AI Parsing Error:", err);
-                showModal("Parsing Failed", `We couldn't analyze that prompt automatically. Details: ${err.message || 'Check your internet connection.'}`);
-            } finally {
-                processBtn.innerHTML = originalBtnContent;
-                processBtn.disabled = false;
             }
-        };
+            localStorage.setItem('vitality_tracker_db', JSON.stringify(vitalityDatabase));
+        }
 
-        const showDraftReview = (data) => {
-            draftParsedResult = data;
-            const card = document.getElementById('draft-review-card');
-            const listContainer = document.getElementById('draft-list-container');
-            const dateLabel = document.getElementById('draft-parsed-date');
+        // --- API KEY CONFIGURATIONS ---
+        function checkAndApplyLoadedApiKey() {
+            const storedKey = localStorage.getItem('vitality_api_key_str');
+            const icon = document.getElementById('api-key-icon');
+            const status = document.getElementById('api-key-status');
+            
+            if (storedKey && storedKey.trim().length > 10) {
+                icon.className = "fa-solid fa-circle-check text-emerald-400";
+                status.textContent = "Gemini Connected";
+                status.className = "text-slate-300";
+            } else {
+                icon.className = "fa-solid fa-key text-amber-500";
+                status.textContent = "Setup API Key";
+                status.className = "text-amber-400 animate-pulse";
+            }
+        }
 
-            listContainer.innerHTML = '';
-            dateLabel.textContent = `Target Date: ${formatDateDisplay(data.targetDate)}`;
+        // Modal triggers
+        function openApiKeyModal() {
+            const input = document.getElementById('input-api-key');
+            input.value = localStorage.getItem('vitality_api_key_str') || '';
+            document.getElementById('api-modal').classList.remove('hidden');
+        }
 
-            let count = 0;
+        function closeApiKeyModal() {
+            document.getElementById('api-modal').classList.add('hidden');
+        }
 
-            if (data.foods && data.foods.length > 0) {
-                data.foods.forEach(food => {
-                    count++;
-                    listContainer.innerHTML += `
-                        <div class="flex items-center justify-between text-xs bg-slate-950/40 p-2 rounded border border-slate-800">
-                            <div class="flex items-center gap-2">
-                                <span class="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-[10px] font-bold">FOOD</span>
-                                <div>
-                                    <span class="font-bold text-slate-100">${food.name}</span>
-                                    <span class="text-slate-400 ml-1">(${food.portion})</span>
-                                </div>
-                            </div>
-                            <span class="font-bold text-emerald-400">${food.calories} kcal</span>
+        function saveApiKey() {
+            const keyVal = document.getElementById('input-api-key').value.trim();
+            localStorage.setItem('vitality_api_key_str', keyVal);
+            closeApiKeyModal();
+            checkAndApplyLoadedApiKey();
+            showToast("API Key Configured Successfully!", "fa-circle-check text-emerald-400");
+        }
+
+        function getApiKey() {
+            return localStorage.getItem('vitality_api_key_str') || "";
+        }
+
+        // --- DICTATION UTILITY ---
+        function useExamplePrompt() {
+            const defaultPrompt = "Woke up at 210 pounds, had a slice of sourdough toast buttered and a grande latte coffee for breakfast.";
+            document.getElementById('ai-dictation-input').value = defaultPrompt;
+        }
+
+        // --- GLOBAL DATE HANDLERS ---
+        function setToday() {
+            const localToday = new Date().toISOString().split('T')[0];
+            onDatepickerChanged(localToday);
+        }
+
+        function onDatepickerChanged(newDateStr) {
+            if (!newDateStr) return;
+            selectedDate = newDateStr;
+            document.getElementById('global-datepicker').value = selectedDate;
+            
+            // Format nice human-readable header label
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateObj = new Date(selectedDate + "T00:00:00");
+            document.getElementById('active-date-label').textContent = dateObj.toLocaleDateString('en-US', options);
+            
+            renderDashboard();
+        }
+
+        function changeActiveDate(offset) {
+            const currentObj = new Date(selectedDate + "T00:00:00");
+            currentObj.setDate(currentObj.getDate() + offset);
+            const nextDateStr = currentObj.toISOString().split('T')[0];
+            onDatepickerChanged(nextDateStr);
+        }
+
+        // Get safe target data record wrapper for a date
+        function getOrCreateDayRecord(dateStr) {
+            if (!vitalityDatabase[dateStr]) {
+                vitalityDatabase[dateStr] = {
+                    weight: null,
+                    foods: [],
+                    exercises: []
+                };
+            }
+            return vitalityDatabase[dateStr];
+        }
+
+        // Get most recently recorded weight
+        function getMostRecentWeight() {
+            const sortedDates = Object.keys(vitalityDatabase).sort((a,b) => new Date(b) - new Date(a));
+            for (const d of sortedDates) {
+                if (vitalityDatabase[d].weight) {
+                    return vitalityDatabase[d].weight;
+                }
+            }
+            return 210; // Safe logical fallback matching default weight
+        }
+
+        // --- CORE VIEW RENDERING ROUTINES ---
+        function renderDashboard() {
+            const currentDay = vitalityDatabase[selectedDate] || { weight: null, foods: [], exercises: [] };
+            
+            // Calculate Diet Calories In
+            let totalIn = 0;
+            const dietListContainer = document.getElementById('diet-list');
+            dietListContainer.innerHTML = '';
+            
+            if (currentDay.foods && currentDay.foods.length > 0) {
+                currentDay.foods.forEach((food, index) => {
+                    totalIn += Number(food.calories || 0);
+                    
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between py-2.5 group";
+                    row.innerHTML = `
+                        <div class="flex-1 min-w-0 pr-2">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">${escapeHTML(food.name)}</h4>
+                            <p class="text-[10px] text-slate-400">${escapeHTML(food.portion || "1 serving")}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs font-bold text-emerald-400 font-mono">${food.calories} kcal</span>
+                            <button onclick="deleteFoodLog(${index})" class="text-slate-600 hover:text-rose-400 transition text-xs opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </div>
                     `;
+                    dietListContainer.appendChild(row);
                 });
-            }
-
-            if (data.exercises && data.exercises.length > 0) {
-                data.exercises.forEach(ex => {
-                    count++;
-                    listContainer.innerHTML += `
-                        <div class="flex items-center justify-between text-xs bg-slate-950/40 p-2 rounded border border-slate-800">
-                            <div class="flex items-center gap-2">
-                                <span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-bold">EXERCISE</span>
-                                <div>
-                                    <span class="font-bold text-slate-100">${ex.name}</span>
-                                    <span class="text-slate-400 ml-1">(${ex.details || '1 session'})</span>
-                                </div>
-                            </div>
-                            <span class="font-bold text-blue-400">${ex.calories} kcal</span>
-                        </div>
-                    `;
-                });
-            }
-
-            if (data.weight) {
-                count++;
-                listContainer.innerHTML += `
-                    <div class="flex items-center justify-between text-xs bg-slate-950/40 p-2 rounded border border-slate-800">
-                        <div class="flex items-center gap-2">
-                            <span class="bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded text-[10px] font-bold">WEIGHT</span>
-                            <span class="font-bold text-slate-100">Daily weigh-in</span>
-                        </div>
-                        <span class="font-bold text-indigo-400">${data.weight} lbs</span>
+            } else {
+                dietListContainer.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-xs flex flex-col items-center space-y-2">
+                        <i class="fa-solid fa-utensils text-2xl text-slate-700"></i>
+                        <span>No diet entries logged today.</span>
                     </div>
                 `;
             }
 
-            if (count > 0) {
-                card.classList.remove('hidden');
+            // Calculate Workout Calories Out
+            let totalOut = 0;
+            const exerciseListContainer = document.getElementById('exercise-list');
+            exerciseListContainer.innerHTML = '';
+
+            if (currentDay.exercises && currentDay.exercises.length > 0) {
+                currentDay.exercises.forEach((ex, index) => {
+                    totalOut += Number(ex.calories || 0);
+                    
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between py-2.5 group";
+                    row.innerHTML = `
+                        <div class="flex-1 min-w-0 pr-2">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">${escapeHTML(ex.name)}</h4>
+                            <p class="text-[10px] text-slate-400">${escapeHTML(ex.details || "Active Training")}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs font-bold text-indigo-400 font-mono">${ex.calories} kcal</span>
+                            <button onclick="deleteExerciseLog(${index})" class="text-slate-600 hover:text-rose-400 transition text-xs opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+                    exerciseListContainer.appendChild(row);
+                });
             } else {
-                showModal("No Data Found", "The AI couldn't find any identifiable foods, activities, or weights in your message. Try being a bit more specific.");
-                card.classList.add('hidden');
-            }
-        };
-
-        const commitDraftLogs = async () => {
-            if (!draftParsedResult) return;
-
-            const date = draftParsedResult.targetDate;
-
-            if (draftParsedResult.foods && draftParsedResult.foods.length > 0) {
-                if (!appData.food[date]) appData.food[date] = [];
-                draftParsedResult.foods.forEach(food => {
-                    appData.food[date].push({
-                        name: food.name,
-                        portion: food.portion,
-                        calories: parseInt(food.calories) || 0
-                    });
-                });
+                exerciseListContainer.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-xs flex flex-col items-center space-y-2">
+                        <i class="fa-solid fa-person-running text-2xl text-slate-700"></i>
+                        <span>No physical exercises logged today.</span>
+                    </div>
+                `;
             }
 
-            if (draftParsedResult.exercises && draftParsedResult.exercises.length > 0) {
-                if (!appData.exercise[date]) appData.exercise[date] = [];
-                draftParsedResult.exercises.forEach(ex => {
-                    appData.exercise[date].push({
-                        name: ex.name,
-                        details: ex.details || '1 session',
-                        calories: parseInt(ex.calories) || 0
-                    });
-                });
-            }
-
-            if (draftParsedResult.weight) {
-                appData.weight[date] = parseFloat(draftParsedResult.weight);
-            }
-
-            // Sync with Cloud database (if active)
-            await saveDayToCloud(date);
-
-            document.getElementById('ai-dictation-input').value = '';
-            document.getElementById('draft-review-card').classList.add('hidden');
-            draftParsedResult = null;
-
-            selectedDate = date;
-            document.getElementById('journal-date-picker').value = selectedDate;
-
-            updateDashboard();
-            showModal("Success", `Your entries have been successfully saved to your journal for ${formatDateDisplay(date)}!`);
-        };
-
-        const updateDashboard = () => {
-            const foodSelected = appData.food[selectedDate] || [];
-            const caloriesIn = foodSelected.reduce((sum, item) => sum + item.calories, 0);
+            // Calculations for Statistics Panels
+            const netBalance = totalIn - totalOut;
+            const netValContainer = document.getElementById('summary-net');
+            const netLabel = document.getElementById('summary-net-label');
             
-            const exerciseSelected = appData.exercise[selectedDate] || [];
-            const caloriesOut = exerciseSelected.reduce((sum, item) => sum + item.calories, 0);
-
-            const netCalories = caloriesIn - caloriesOut;
-
-            let displayWeight = '--';
-            if (appData.weight[selectedDate] !== undefined) {
-                displayWeight = appData.weight[selectedDate];
+            netValContainer.innerHTML = `${netBalance > 0 ? '+' : ''}${netBalance} <span class="text-xs font-normal text-slate-500">kcal</span>`;
+            
+            if (netBalance > 0) {
+                netLabel.textContent = "Calorie Surplus (Gain Trend)";
+                netLabel.className = "text-[10px] font-semibold text-amber-500 mt-0.5";
+            } else if (netBalance < 0) {
+                netLabel.textContent = "Calorie Deficit (Loss Trend)";
+                netLabel.className = "text-[10px] font-semibold text-emerald-400 mt-0.5";
             } else {
-                const sortedDates = Object.keys(appData.weight).sort();
-                const priorDates = sortedDates.filter(d => d <= selectedDate);
-                if (priorDates.length > 0) {
-                    displayWeight = appData.weight[priorDates[priorDates.length - 1]];
+                netLabel.textContent = "Perfect Equilibrium Balance";
+                netLabel.className = "text-[10px] font-semibold text-slate-400 mt-0.5";
+            }
+
+            // Progress Bar Values
+            document.getElementById('summary-in').innerHTML = `${totalIn} <span class="text-xs font-normal text-slate-500">kcal</span>`;
+            document.getElementById('summary-out').innerHTML = `${totalOut} <span class="text-xs font-normal text-slate-500">kcal</span>`;
+            
+            const maxCalThreshold = 3000;
+            const inPercentage = Math.min((totalIn / maxCalThreshold) * 100, 100);
+            const outPercentage = Math.min((totalOut / 1500) * 100, 100);
+            
+            document.getElementById('summary-in-bar').style.width = `${inPercentage}%`;
+            document.getElementById('summary-out-bar').style.width = `${outPercentage}%`;
+
+            // Active Journal Badges
+            document.getElementById('diet-kcal-badge').textContent = `${totalIn} kcal`;
+            document.getElementById('exercise-kcal-badge').textContent = `${totalOut} kcal`;
+
+            // Display weight trends
+            const weightValContainer = document.getElementById('summary-weight');
+            const weightChgLabel = document.getElementById('summary-weight-change');
+            
+            if (currentDay.weight) {
+                weightValContainer.innerHTML = `${currentDay.weight} <span class="text-xs font-normal text-slate-500">lbs</span>`;
+                
+                // Track relative change compared to prior day
+                const priorDate = new Date(selectedDate + "T00:00:00");
+                priorDate.setDate(priorDate.getDate() - 1);
+                const priorDateStr = priorDate.toISOString().split('T')[0];
+                const priorDay = vitalityDatabase[priorDateStr];
+                
+                if (priorDay && priorDay.weight) {
+                    const diff = parseFloat((currentDay.weight - priorDay.weight).toFixed(1));
+                    if (diff > 0) {
+                        weightChgLabel.innerHTML = `<i class="fa-solid fa-arrow-trend-up text-rose-400 mr-1"></i>+${diff} lbs vs. yesterday`;
+                        weightChgLabel.className = "text-[10px] text-rose-400 font-semibold mt-0.5";
+                    } else if (diff < 0) {
+                        weightChgLabel.innerHTML = `<i class="fa-solid fa-arrow-trend-down text-emerald-400 mr-1"></i>${diff} lbs vs. yesterday`;
+                        weightChgLabel.className = "text-[10px] text-emerald-400 font-semibold mt-0.5";
+                    } else {
+                        weightChgLabel.textContent = "No change vs. yesterday";
+                        weightChgLabel.className = "text-[10px] text-slate-500 mt-0.5";
+                    }
+                } else {
+                    weightChgLabel.textContent = "Stable base weight established";
+                    weightChgLabel.className = "text-[10px] text-slate-400 mt-0.5";
+                }
+            } else {
+                weightValContainer.innerHTML = `-- <span class="text-xs font-normal text-slate-500">lbs</span>`;
+                weightChgLabel.textContent = "No logged weight readings today";
+                weightChgLabel.className = "text-[10px] text-slate-500 mt-0.5";
+            }
+
+            // Sync nice human-friendly Date Strings next to Journal headers
+            const dateObj = new Date(selectedDate + "T00:00:00");
+            const dateShortStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            document.getElementById('diet-journal-title').textContent = `Diet Journal (${dateShortStr})`;
+            document.getElementById('exercise-journal-title').textContent = `Exercise Journal (${dateShortStr})`;
+
+            // Synchronize Analytics Line Graphs
+            syncAnalyticsChart();
+        }
+
+        function syncWithVisualComponents() {
+            renderDashboard();
+        }
+
+        // --- MANUAL FORM MANIPULATORS ---
+        function toggleManualOverrideCollapse() {
+            const drawer = document.getElementById('manual-collapsible-drawer');
+            const chevron = document.getElementById('manual-chevron');
+            isManualDrawerOpen = !isManualDrawerOpen;
+            
+            if (isManualDrawerOpen) {
+                drawer.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+            } else {
+                drawer.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
+        function manuallyAddFood() {
+            const name = document.getElementById('food-name').value.trim();
+            const portion = document.getElementById('food-portion').value.trim() || "1 serving";
+            const calories = parseInt(document.getElementById('food-calories').value);
+            
+            if (!name || isNaN(calories) || calories < 0) {
+                showNativeAlert("Please provide a valid Food Name and non-negative Calorie Value.", "fa-circle-exclamation text-amber-500", "Missing Form Details");
+                return;
+            }
+            
+            const dayRecord = getOrCreateDayRecord(selectedDate);
+            dayRecord.foods.push({ name, portion, calories });
+            
+            saveDatabaseToCache();
+            
+            // Reset input values
+            document.getElementById('food-name').value = '';
+            document.getElementById('food-portion').value = '';
+            document.getElementById('food-calories').value = '';
+            
+            showToast(`Added ${name} log successfully!`, "fa-circle-check text-emerald-400");
+        }
+
+        function manuallyAddWorkout() {
+            const name = document.getElementById('exercise-name').value.trim();
+            const details = document.getElementById('exercise-details').value.trim() || "Physical Activity";
+            const calories = parseInt(document.getElementById('exercise-calories').value);
+            
+            if (!name || isNaN(calories) || calories < 0) {
+                showNativeAlert("Please provide a valid Workout Activity Name and non-negative Calorie value.", "fa-circle-exclamation text-amber-500", "Missing Form Details");
+                return;
+            }
+            
+            const dayRecord = getOrCreateDayRecord(selectedDate);
+            dayRecord.exercises.push({ name, details, calories });
+            
+            saveDatabaseToCache();
+            
+            // Reset fields
+            document.getElementById('exercise-name').value = '';
+            document.getElementById('exercise-details').value = '';
+            document.getElementById('exercise-calories').value = '';
+            
+            showToast(`Recorded ${name} successfully!`, "fa-circle-check text-emerald-400");
+        }
+
+        function manuallyAddWeight() {
+            const wt = parseFloat(document.getElementById('manual-weight-input').value);
+            
+            if (isNaN(wt) || wt <= 0) {
+                showNativeAlert("Please insert a valid, positive weight reading.", "fa-circle-exclamation text-amber-500", "Invalid Weight Entry");
+                return;
+            }
+            
+            const dayRecord = getOrCreateDayRecord(selectedDate);
+            dayRecord.weight = wt;
+            
+            saveDatabaseToCache();
+            document.getElementById('manual-weight-input').value = '';
+            
+            showToast(`Recorded weight at ${wt} lbs!`, "fa-circle-check text-amber-400");
+        }
+
+        function deleteFoodLog(index) {
+            const dayRecord = vitalityDatabase[selectedDate];
+            if (dayRecord && dayRecord.foods) {
+                const item = dayRecord.foods[index];
+                dayRecord.foods.splice(index, 1);
+                saveDatabaseToCache();
+                showToast(`Removed ${item.name} log.`, "fa-circle-info text-slate-400");
+            }
+        }
+
+        function deleteExerciseLog(index) {
+            const dayRecord = vitalityDatabase[selectedDate];
+            if (dayRecord && dayRecord.exercises) {
+                const item = dayRecord.exercises[index];
+                dayRecord.exercises.splice(index, 1);
+                saveDatabaseToCache();
+                showToast(`Removed ${item.name} log.`, "fa-circle-info text-slate-400");
+            }
+        }
+
+        // --- DATABASE CLEAR MAINTENANCE ---
+        function confirmResetAllData() {
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        function executeResetData() {
+            closeConfirmModal();
+            vitalityDatabase = {};
+            localStorage.removeItem('vitality_tracker_db');
+            seedRealisticHistoricalData();
+            loadDatabaseFromCache();
+            renderDashboard();
+            showToast("Database Cleared & Seeded with Demo History!", "fa-circle-check text-amber-400");
+        }
+
+        // --- CUSTOM TOAST NOTIFICATION UTILITY ---
+        function showToast(message, iconClass = "fa-circle-check text-emerald-400") {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+            
+            icon.className = `fa-solid ${iconClass} text-base`;
+            msg.textContent = message;
+            
+            toast.classList.remove('translate-y-12', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-12', 'opacity-0');
+            }, 3500);
+        }
+
+        // --- CUSTOM ACCESSIBLE MODAL ALERTS ---
+        function showNativeAlert(message, iconClass = "fa-circle-info text-indigo-400", title = "Information") {
+            document.getElementById('alert-title').textContent = title;
+            document.getElementById('alert-text').textContent = message;
+            document.getElementById('alert-icon').className = `fa-solid ${iconClass}`;
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alert-modal').classList.add('hidden');
+        }
+
+        // --- EXPONENTIAL BACKOFF API CALL WITH GEMINI-2.5-FLASH ---
+        async function fetchGeminiAPI(payload, retries = 5, delay = 1000) {
+            const key = getApiKey();
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                    
+                    const errorJson = await response.json().catch(() => ({}));
+                    if (response.status === 403) {
+                        throw new Error(`API Error (403): Method doesn't allow unregistered callers. Please configure a valid Gemini API Key first.`);
+                    }
+                    
+                    if (errorJson?.error?.message) {
+                        throw new Error(`API Error (${response.status}): ${errorJson.error.message}`);
+                    }
+                    
+                    throw new Error(`Server returned status code ${response.status}`);
+                } catch (err) {
+                    if (i === retries - 1) {
+                        throw err; // Out of retries, propagate error
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
                 }
             }
+        }
 
-            document.getElementById('summary-calories-in').innerHTML = `${caloriesIn} <span class="text-sm font-normal text-slate-500">kcal</span>`;
-            document.getElementById('summary-calories-out').innerHTML = `${caloriesOut} <span class="text-sm font-normal text-slate-500">kcal</span>`;
-            document.getElementById('food-total-badge').textContent = `${caloriesIn} kcal`;
-            document.getElementById('exercise-total-badge').textContent = `${caloriesOut} kcal`;
+        // --- VOICE AUDIO MEMO SYSTEM FOR ALL BROWSERS (FALLBACK FOR FIREFOX) ---
+        function toggleVoiceInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             
-            const netEl = document.getElementById('summary-net-calories');
-            netEl.textContent = netCalories;
-
-            if (netCalories > 500) {
-                 netEl.className = "text-3xl font-bold text-orange-600";
-            } else if (netCalories < -500) {
-                netEl.className = "text-3xl font-bold text-indigo-600";
+            if (SpeechRecognition) {
+                runNativeSpeechRecognition(SpeechRecognition);
             } else {
-                netEl.className = "text-3xl font-bold text-slate-900";
+                toggleAudioRecordingFallback();
+            }
+        }
+
+        // 1. Native Webkit speech transcriber
+        function runNativeSpeechRecognition(SpeechClass) {
+            if (isRecordingAudio) return; // Prevent conflicts
+            
+            const micIcon = document.getElementById('mic-icon');
+            const recordingPulse = document.getElementById('recording-pulse');
+            
+            const recognition = new SpeechClass();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                micIcon.className = "fa-solid fa-microphone text-red-500";
+                recordingPulse.classList.remove('hidden');
+                showToast("Listening... Speak your daily logs clearly.", "fa-microphone text-indigo-400");
+            };
+
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                document.getElementById('ai-dictation-input').value = text;
+                showToast("Speech transcribed!", "fa-circle-check text-emerald-400");
+            };
+
+            recognition.onerror = function(event) {
+                showToast("Voice transcription timed out or failed.", "fa-circle-exclamation text-amber-500");
+            };
+
+            recognition.onend = function() {
+                micIcon.className = "fa-solid fa-microphone text-base";
+                recordingPulse.classList.add('hidden');
+            };
+
+            recognition.start();
+        }
+
+        // 2. Audio Voice Memo Fallback Routine for Firefox & Unsupported Browsers
+        async function toggleAudioRecordingFallback() {
+            const micIcon = document.getElementById('mic-icon');
+            const recordingPulse = document.getElementById('recording-pulse');
+
+            if (isRecordingAudio) {
+                // STOP RECORDING
+                isRecordingAudio = false;
+                micIcon.className = "fa-solid fa-microphone text-base";
+                recordingPulse.classList.add('hidden');
+                
+                if (audioRecorder && audioRecorder.state !== 'inactive') {
+                    audioRecorder.stop();
+                }
+                showToast("Processing Voice Memo...", "fa-spinner fa-spin text-indigo-400");
+            } else {
+                // START RECORDING
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    recordedAudioChunks = [];
+                    
+                    audioRecorder = new MediaRecorder(stream);
+                    
+                    audioRecorder.ondataavailable = function(e) {
+                        if (e.data.size > 0) {
+                            recordedAudioChunks.push(e.data);
+                        }
+                    };
+
+                    audioRecorder.onstop = async function() {
+                        const audioBlob = new Blob(recordedAudioChunks, { type: 'audio/webm' });
+                        
+                        // Convert audio blob to base64 encoded string for Gemini prompt
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = async function() {
+                            const base64Data = reader.result.split(',')[1];
+                            await parseAudioMemoWithGemini(base64Data);
+                        };
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    audioRecorder.start();
+                    isRecordingAudio = true;
+                    micIcon.className = "fa-solid fa-microphone text-red-500";
+                    recordingPulse.classList.remove('hidden');
+                    showToast("Recording Audio Memo... Click Mic again to stop.", "fa-microphone text-red-500");
+                } catch (err) {
+                    showNativeAlert("Unable to access microphone. Please ensure microphone permissions are allowed in Firefox.", "fa-microphone-slash text-rose-500", "Microphone Blocked");
+                }
+            }
+        }
+
+        // Translate Audio File to structured log via Gemini Multimedia Payload
+        async function parseAudioMemoWithGemini(base64Audio) {
+            const key = getApiKey();
+            if (!key) {
+                openApiKeyModal();
+                showNativeAlert("Please configure your Gemini API Key to enable voice logging.", "fa-key text-amber-500", "API Key Required");
+                return;
             }
 
-            document.getElementById('summary-weight').textContent = displayWeight;
+            document.getElementById('ai-processing-loader').classList.remove('hidden');
+            document.getElementById('loader-message').textContent = "Analyzing audio transcription and extracting data...";
+            document.getElementById('draft-card').classList.add('hidden');
 
-            const formattedSelectedDate = formatDateDisplay(selectedDate);
-            document.getElementById('diet-journal-header').textContent = `Diet Journal (${formattedSelectedDate})`;
-            document.getElementById('exercise-journal-header').textContent = `Exercise Journal (${formattedSelectedDate})`;
+            const lastWeight = getMostRecentWeight();
+            const currentSelectedDate = selectedDate;
 
-            updateLists(selectedDate);
-            updateChart();
-        };
+            const systemPrompt = `You are a professional nutrition, metabolic physics, and activity tracker engine. 
+            Analyze the user's spoken audio file and extract:
+            1. Daily Body Weight values mentioned in pounds.
+            2. Foods logged (standardize names, portion size description, and estimate calories).
+            3. Exercises logged (standardize details, duration, and estimate calories burned using MET coefficients tailored to their weight which is currently ${lastWeight} lbs).
+            4. Intended logging date relative to the current reference date which is ${currentSelectedDate} (e.g. "yesterday" maps to the day before, "this morning" maps to ${currentSelectedDate}, etc).
 
-        const updateLists = (dateStr) => {
-            const foodList = document.getElementById('list-food');
-            const exerciseList = document.getElementById('list-exercise');
+            Respond ONLY with a valid, clean JSON object matching this structure:
+            {
+              "targetDate": "YYYY-MM-DD",
+              "weight": float or null,
+              "foods": [
+                { "name": "Standardized Food Name", "portion": "standard count/details", "calories": integer }
+              ],
+              "exercises": [
+                { "name": "Standardized Activity Name", "details": "reps/duration/distance", "calories": integer }
+              ]
+            }`;
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: systemPrompt },
+                        {
+                            inlineData: {
+                                mimeType: "audio/webm",
+                                data: base64Audio
+                            }
+                        }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            try {
+                const responseData = await fetchGeminiAPI(payload);
+                const textOutput = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (!textOutput) {
+                    throw new Error("Empty text output returned from analysis service.");
+                }
+
+                const parsed = JSON.parse(cleanMarkdownJson(textOutput));
+                displayDraftCard(parsed);
+                showToast("Voice parsed successfully!", "fa-circle-check text-emerald-400");
+            } catch (err) {
+                showNativeAlert(err.message || "An unexpected error occurred during audio processing.", "fa-triangle-exclamation text-rose-500", "Parsing Failed");
+            } finally {
+                document.getElementById('ai-processing-loader').classList.add('hidden');
+            }
+        }
+
+        // --- NATURAL LANGUAGE PROMPT ANALYZER (GEMINI TEXT API) ---
+        async function parsePromptWithAI() {
+            const prompt = document.getElementById('ai-dictation-input').value.trim();
+            if (!prompt) {
+                showNativeAlert("Please write or record a description first.", "fa-keyboard text-slate-400", "Empty Prompt");
+                return;
+            }
+
+            const key = getApiKey();
+            if (!key) {
+                openApiKeyModal();
+                showNativeAlert("A Gemini API Key is required to run smart natural language analysis. Click the key icon in the navigation bar to configure.", "fa-key text-amber-500", "API Key Missing");
+                return;
+            }
+
+            document.getElementById('ai-processing-loader').classList.remove('hidden');
+            document.getElementById('loader-message').textContent = "Gemini is analyzing your entry details...";
+            document.getElementById('draft-card').classList.add('hidden');
+
+            const lastWeight = getMostRecentWeight();
+            const currentSelectedDate = selectedDate;
+
+            const systemPrompt = `You are a fitness and diet tracker parser. Take the user's natural text prompt and extract:
+            1. Daily Body Weight reading mentioned in pounds.
+            2. Foods logged (standardize names, portion details, and estimate calories).
+            3. Workouts/Exercises logged (standardize details, duration, sets, reps and estimate calories burned using MET coefficients tailored to their weight which is currently ${lastWeight} lbs).
+            4. Intended calendar date relative to the current reference date which is ${currentSelectedDate} (e.g. "yesterday" maps to the day before, "this morning" maps to ${currentSelectedDate}).
+
+            Respond strictly with a single JSON object. Ensure no markdown formatting surrounds the object. Structure:
+            {
+              "targetDate": "YYYY-MM-DD",
+              "weight": float or null,
+              "foods": [
+                { "name": "Standardized Food Name", "portion": "standard portion/count details", "calories": integer }
+              ],
+              "exercises": [
+                { "name": "Standardized Activity Name", "details": "reps/duration/distance details", "calories": integer }
+              ]
+            }`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: `${systemPrompt}\n\nUser Prompt: "${prompt}"` }]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            try {
+                const responseData = await fetchGeminiAPI(payload);
+                const textOutput = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (!textOutput) {
+                    throw new Error("Unable to parse a response from Google Cloud backend.");
+                }
+
+                const parsed = JSON.parse(cleanMarkdownJson(textOutput));
+                displayDraftCard(parsed);
+                showToast("Analysis complete! Review draft below.", "fa-circle-check text-emerald-400");
+            } catch (err) {
+                showNativeAlert(err.message || "An unexpected error occurred.", "fa-triangle-exclamation text-rose-500", "Parsing Failed");
+            } finally {
+                document.getElementById('ai-processing-loader').classList.add('hidden');
+            }
+        }
+
+        // Strip markdown backticks if returned in response
+        function cleanMarkdownJson(str) {
+            let out = str.trim();
+            if (out.startsWith("```json")) {
+                out = out.slice(7);
+            } else if (out.startsWith("```")) {
+                out = out.slice(3);
+            }
+            if (out.endsWith("```")) {
+                out = out.slice(0, -3);
+            }
+            return out.trim();
+        }
+
+        // --- DRAFT CONFIRM PANEL RENDERING ---
+        function displayDraftCard(parsedData) {
+            currentDraft = parsedData;
             
-            foodList.innerHTML = '';
-            exerciseList.innerHTML = '';
+            // Format draft target date preview
+            const dateObj = new Date(parsedData.targetDate + "T00:00:00");
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('draft-date').textContent = isNaN(dateObj.getTime()) ? parsedData.targetDate : dateObj.toLocaleDateString('en-US', options);
 
-            const foods = appData.food[dateStr] || [];
-            if (foods.length === 0) {
-                foodList.innerHTML = '<li class="text-slate-400 italic text-center py-8">No food items recorded for this date</li>';
+            // Display extracted Weight
+            const weightRow = document.getElementById('draft-weight-row');
+            if (parsedData.weight) {
+                document.getElementById('draft-weight').textContent = `${parsedData.weight} lbs`;
+                weightRow.classList.remove('hidden');
+                weightRow.classList.add('flex');
             } else {
-                foods.forEach((item, index) => {
-                    const foodLi = document.createElement('li');
-                    foodLi.className = "flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-100 last:border-0 group transition-colors";
-                    foodLi.innerHTML = `
-                        <div class="flex flex-col truncate pr-2">
-                            <span class="font-bold text-slate-800 truncate">${item.name}</span>
-                            <span class="text-xs text-slate-500">${item.portion || '1 serving'}</span>
+                weightRow.classList.add('hidden');
+                weightRow.classList.remove('flex');
+            }
+
+            // Display Foods
+            const foodsSection = document.getElementById('draft-foods-list');
+            const foodsContainer = document.getElementById('draft-foods-container');
+            foodsContainer.innerHTML = '';
+            
+            if (parsedData.foods && parsedData.foods.length > 0) {
+                parsedData.foods.forEach(food => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-emerald-950/20 border border-emerald-900/40 p-2 rounded-lg text-xs";
+                    row.innerHTML = `
+                        <div>
+                            <span class="font-bold text-slate-100">${escapeHTML(food.name)}</span>
+                            <span class="text-[10px] text-slate-400 block">${escapeHTML(food.portion)}</span>
                         </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <span class="font-semibold text-emerald-600 text-sm">${item.calories} kcal</span>
-                            <button class="delete-food-btn text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                            </button>
-                        </div>
+                        <span class="font-mono font-bold text-emerald-400">+${food.calories} kcal</span>
                     `;
-                    foodLi.querySelector('.delete-food-btn').addEventListener('click', () => deleteEntry('food', dateStr, index));
-                    foodList.appendChild(foodLi);
+                    foodsContainer.appendChild(row);
                 });
-            }
-
-            const exercises = appData.exercise[dateStr] || [];
-            if (exercises.length === 0) {
-                exerciseList.innerHTML = '<li class="text-slate-400 italic text-center py-8">No physical training recorded for this date</li>';
+                foodsSection.classList.remove('hidden');
             } else {
-                exercises.forEach((item, index) => {
-                    const exerciseLi = document.createElement('li');
-                    exerciseLi.className = "flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-100 last:border-0 group transition-colors";
-                    exerciseLi.innerHTML = `
-                        <div class="flex flex-col truncate pr-2">
-                            <span class="font-bold text-slate-800 truncate">${item.name}</span>
-                            <span class="text-xs text-slate-500">${item.details || '1 session'}</span>
+                foodsSection.classList.add('hidden');
+            }
+
+            // Display Exercises
+            const exSection = document.getElementById('draft-exercises-list');
+            const exContainer = document.getElementById('draft-exercises-container');
+            exContainer.innerHTML = '';
+            
+            if (parsedData.exercises && parsedData.exercises.length > 0) {
+                parsedData.exercises.forEach(ex => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-indigo-950/20 border border-indigo-900/40 p-2 rounded-lg text-xs";
+                    row.innerHTML = `
+                        <div>
+                            <span class="font-bold text-slate-100">${escapeHTML(ex.name)}</span>
+                            <span class="text-[10px] text-slate-400 block">${escapeHTML(ex.details)}</span>
                         </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <span class="font-semibold text-blue-600 text-sm">${item.calories} kcal</span>
-                            <button class="delete-exercise-btn text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                            </button>
-                        </div>
+                        <span class="font-mono font-bold text-indigo-400">-${ex.calories} kcal</span>
                     `;
-                    exerciseLi.querySelector('.delete-exercise-btn').addEventListener('click', () => deleteEntry('exercise', dateStr, index));
-                    exerciseList.appendChild(exerciseLi);
+                    exContainer.appendChild(row);
                 });
+                exSection.classList.remove('hidden');
+            } else {
+                exSection.classList.add('hidden');
             }
-        };
 
-        const deleteEntry = async (type, date, index) => {
-            if (appData[type] && appData[type][date]) {
-                appData[type][date].splice(index, 1);
-                await saveDayToCloud(date);
-                updateDashboard();
-            }
-        };
-
-        const generateSampleData = () => {
-            const today = new Date();
-            let currentWeight = 185.0;
+            document.getElementById('draft-card').classList.remove('hidden');
             
-            for (let i = 30; i >= 1; i--) {
-                const d = new Date(today);
-                d.setDate(today.getDate() - i);
-                const dateStr = normalizeDateString(d);
-                
-                const calIn = Math.floor(Math.random() * 1000) + 1800;
-                appData.food[dateStr] = [{ name: 'Standard Daily Nutrition Plan', portion: '1 full day', calories: calIn }];
-                
-                const calOut = Math.floor(Math.random() * 500) + 300;
-                appData.exercise[dateStr] = [{ name: 'Afternoon Workout Session', details: '60 mins', calories: calOut }];
-                
-                const netCal = calIn - (2000 + calOut); 
-                currentWeight += (netCal / 3500) + (Math.random() * 0.4 - 0.2); 
-                appData.weight[dateStr] = parseFloat(currentWeight.toFixed(1));
-            }
-        };
+            // Auto scroll preview card gently into focus
+            document.getElementById('draft-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
 
-        const updateChart = () => {
-            const canvas = document.getElementById('progressChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const daysToView = parseInt(document.getElementById('chart-range').value);
+        function clearDraft() {
+            currentDraft = null;
+            document.getElementById('draft-card').classList.add('hidden');
+            document.getElementById('ai-dictation-input').value = '';
+            showToast("Draft Discarded.", "fa-circle-info text-slate-400");
+        }
+
+        function commitDraft() {
+            if (!currentDraft) return;
+
+            // Target normalized log date
+            const targetDateStr = currentDraft.targetDate || selectedDate;
+            const targetRecord = getOrCreateDayRecord(targetDateStr);
+
+            // Merge weight readings
+            if (currentDraft.weight) {
+                targetRecord.weight = currentDraft.weight;
+            }
+
+            // Append extracted items
+            if (currentDraft.foods && currentDraft.foods.length > 0) {
+                targetRecord.foods = targetRecord.foods.concat(currentDraft.foods);
+            }
+            if (currentDraft.exercises && currentDraft.exercises.length > 0) {
+                targetRecord.exercises = targetRecord.exercises.concat(currentDraft.exercises);
+            }
+
+            saveDatabaseToCache();
             
-            const labels = [];
-            const dataIn = [];
-            const dataOut = [];
-            const dataWeight = [];
+            // Clean active input consoles
+            document.getElementById('ai-dictation-input').value = '';
+            document.getElementById('draft-card').classList.add('hidden');
+            currentDraft = null;
 
-            const today = new Date();
+            // Shift active focus of dashboard to the target parsed date automatically
+            onDatepickerChanged(targetDateStr);
+            showToast("Committed entries directly to journal!", "fa-circle-check text-emerald-400");
+        }
+
+        // --- CHART JS ANALYTICS COMPONENT ---
+        function initializeChart() {
+            const ctx = document.getElementById('analyticsChart').getContext('2d');
             
-            for (let i = daysToView - 1; i >= 0; i--) {
-                const d = new Date(today);
-                d.setDate(today.getDate() - i);
-                const dateStr = normalizeDateString(d);
-                
-                labels.push(formatDateDisplay(dateStr));
-
-                const foods = appData.food[dateStr] || [];
-                dataIn.push(foods.reduce((sum, item) => sum + item.calories, 0));
-
-                const exercises = appData.exercise[dateStr] || [];
-                dataOut.push(exercises.reduce((sum, item) => sum + item.calories, 0));
-
-                dataWeight.push(appData.weight[dateStr] || null);
-            }
-
-            if (progressChartInstance) {
-                progressChartInstance.destroy();
-            }
-
-            progressChartInstance = new Chart(ctx, {
+            analyticsChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: [],
                     datasets: [
                         {
-                            label: 'Calories In',
-                            data: dataIn,
-                            backgroundColor: 'rgba(16, 185, 129, 0.75)', 
+                            label: 'Calories In (kcal)',
+                            data: [],
+                            backgroundColor: 'rgba(16, 185, 129, 0.45)', // Emerald
                             borderColor: 'rgb(16, 185, 129)',
-                            borderWidth: 1,
-                            yAxisID: 'y',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
                             order: 2,
-                            borderRadius: 4
+                            yAxisID: 'y'
                         },
                         {
-                            label: 'Calories Out',
-                            data: dataOut,
-                            backgroundColor: 'rgba(59, 130, 246, 0.75)', 
-                            borderColor: 'rgb(59, 130, 246)',
-                            borderWidth: 1,
-                            yAxisID: 'y',
+                            label: 'Calories Out (kcal)',
+                            data: [],
+                            backgroundColor: 'rgba(99, 102, 241, 0.45)', // Indigo
+                            borderColor: 'rgb(99, 102, 241)',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
                             order: 3,
-                            borderRadius: 4
+                            yAxisID: 'y'
                         },
                         {
-                            label: 'Weight (lbs)',
-                            data: dataWeight,
+                            label: 'Body Weight (lbs)',
+                            data: [],
                             type: 'line',
-                            borderColor: 'rgb(79, 70, 229)', 
-                            backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                            borderColor: 'rgb(245, 158, 11)', // Amber
+                            backgroundColor: 'rgba(245, 158, 11, 0.2)',
                             borderWidth: 3,
-                            pointBackgroundColor: 'white',
-                            pointBorderColor: 'rgb(79, 70, 229)',
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            tension: 0.3,
-                            yAxisID: 'y1',
+                            pointBackgroundColor: 'rgb(245, 158, 11)',
+                            pointHoverRadius: 7,
+                            tension: 0.35,
+                            fill: false,
                             order: 1,
-                            spanGaps: true
+                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -1078,214 +1383,143 @@
                     maintainAspectRatio: false,
                     interaction: {
                         mode: 'index',
-                        intersect: false,
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.03)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10, weight: 'bold' }
+                            }
+                        },
+                        y: {
+                            position: 'left',
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 9 }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Calories (kcal)',
+                                color: '#94a3b8',
+                                font: { size: 10, weight: 'bold' }
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false // prevent grid overlap
+                            },
+                            ticks: {
+                                color: '#f59e0b',
+                                font: { size: 9 }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Weight (lbs)',
+                                color: '#f59e0b',
+                                font: { size: 10, weight: 'bold' }
+                            }
+                        }
                     },
                     plugins: {
                         legend: {
                             position: 'top',
                             labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: { family: "'Inter', sans-serif" }
+                                color: '#e2e8f0',
+                                boxWidth: 12,
+                                font: { size: 10, weight: '500' }
                             }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            titleFont: { family: "'Inter', sans-serif", size: 13 },
-                            bodyFont: { family: "'Inter', sans-serif", size: 13 },
-                            padding: 12,
-                            cornerRadius: 8
                         }
-                    },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: { display: true, text: 'Calories (kcal)' },
-                            suggestedMax: 3000,
-                            beginAtZero: true
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: { display: true, text: 'Weight (lbs)' },
-                            grid: { drawOnChartArea: false },
-                            suggestedMin: Math.min(...dataWeight.filter(v => v !== null)) - 5 || 150,
-                            suggestedMax: Math.max(...dataWeight.filter(v => v !== null)) + 5 || 250,
-                        },
                     }
                 }
             });
-        };
+        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const today = getTodayString();
-            selectedDate = today; 
+        function setChartRange(days) {
+            chartRange = days;
             
-            document.getElementById('food-date').value = today;
-            document.getElementById('exercise-date').value = today;
-            document.getElementById('weight-date').value = today;
-            document.getElementById('journal-date-picker').value = today;
-            
-            document.getElementById('current-date-display').textContent = formatDateDisplay(today);
-
-            initSpeechRecognition();
-            setupCloudSync();
-
-            // Date selector click listeners
-            document.getElementById('journal-date-picker').addEventListener('change', (e) => {
-                selectedDate = normalizeDateString(e.target.value);
-                updateDashboard();
-            });
-
-            document.getElementById('btn-prev-day').addEventListener('click', () => {
-                const d = new Date(selectedDate + 'T00:00:00');
-                d.setDate(d.getDate() - 1);
-                selectedDate = normalizeDateString(d);
-                document.getElementById('journal-date-picker').value = selectedDate;
-                updateDashboard();
-            });
-
-            document.getElementById('btn-next-day').addEventListener('click', () => {
-                const d = new Date(selectedDate + 'T00:00:00');
-                d.setDate(d.getDate() + 1);
-                selectedDate = normalizeDateString(d);
-                document.getElementById('journal-date-picker').value = selectedDate;
-                updateDashboard();
-            });
-
-            document.getElementById('btn-jump-today').addEventListener('click', () => {
-                selectedDate = today;
-                document.getElementById('journal-date-picker').value = selectedDate;
-                updateDashboard();
-            });
-
-            document.getElementById('btn-dictation-toggle').addEventListener('click', toggleRecording);
-            document.getElementById('btn-ai-process').addEventListener('click', parseLogsWithAI);
-            document.getElementById('btn-draft-commit').addEventListener('click', commitDraftLogs);
-            document.getElementById('btn-draft-cancel').addEventListener('click', () => {
-                document.getElementById('draft-review-card').classList.add('hidden');
-                draftParsedResult = null;
-            });
-
-            document.querySelectorAll('.demo-prompt').forEach(elem => {
-                elem.addEventListener('click', () => {
-                    document.getElementById('ai-dictation-input').value = elem.textContent.replace(/"/g, "");
-                });
-            });
-
-            document.getElementById('btn-toggle-manual').addEventListener('click', () => {
-                const container = document.getElementById('manual-forms-container');
-                const chevron = document.getElementById('manual-toggle-chevron');
-                const isHidden = container.classList.toggle('hidden');
-                
-                if (isHidden) {
-                    chevron.style.transform = 'rotate(0deg)';
+            // Toggle highlight styles
+            [7, 14, 30].forEach(d => {
+                const btn = document.getElementById(`chart-${d}`);
+                if (d === days) {
+                    btn.className = "px-2.5 py-1 text-[10px] font-bold rounded-md bg-indigo-600 text-white transition";
                 } else {
-                    chevron.style.transform = 'rotate(180deg)';
+                    btn.className = "px-2.5 py-1 text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200 transition";
                 }
             });
 
-            document.getElementById('form-food').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const date = document.getElementById('food-date').value;
-                const name = document.getElementById('food-name').value.trim();
-                const portion = document.getElementById('food-portion').value.trim() || '1 serving';
-                const calories = parseInt(document.getElementById('food-calories').value);
+            syncAnalyticsChart();
+        }
 
-                if (!appData.food[date]) appData.food[date] = [];
-                appData.food[date].push({ name, portion, calories });
+        function syncAnalyticsChart() {
+            if (!analyticsChartInstance) return;
 
-                await saveDayToCloud(date);
+            const labels = [];
+            const caloriesIn = [];
+            const caloriesOut = [];
+            const weights = [];
 
-                document.getElementById('food-name').value = '';
-                document.getElementById('food-portion').value = '';
-                document.getElementById('food-calories').value = '';
+            // Compile relative range array ending on active date selection
+            const referenceDate = new Date(selectedDate + "T00:00:00");
+            
+            for (let i = chartRange - 1; i >= 0; i--) {
+                const tempDate = new Date(referenceDate);
+                tempDate.setDate(referenceDate.getDate() - i);
+                const tempDateStr = tempDate.toISOString().split('T')[0];
                 
-                selectedDate = date;
-                document.getElementById('journal-date-picker').value = selectedDate;
+                // Format clean label (e.g., "May 20")
+                const monthLabel = tempDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                labels.push(monthLabel);
+
+                const data = vitalityDatabase[tempDateStr] || { weight: null, foods: [], exercises: [] };
                 
-                updateDashboard();
-                showModal("Logged Successfully", `Saved manually logged food: "${name}"`);
-            });
+                // Sum food calories
+                let foodSum = 0;
+                if (data.foods) {
+                    data.foods.forEach(f => foodSum += Number(f.calories || 0));
+                }
+                caloriesIn.push(foodSum);
 
-            document.getElementById('form-exercise').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const date = document.getElementById('exercise-date').value;
-                const name = document.getElementById('exercise-name').value.trim();
-                const details = document.getElementById('exercise-details').value.trim() || '1 session';
-                const calories = parseInt(document.getElementById('exercise-calories').value);
+                // Sum exercise calories
+                let exSum = 0;
+                if (data.exercises) {
+                    data.exercises.forEach(e => exSum += Number(e.calories || 0));
+                }
+                caloriesOut.push(exSum);
 
-                if (!appData.exercise[date]) appData.exercise[date] = [];
-                appData.exercise[date].push({ name, details, calories });
+                // Extract Weight
+                weights.push(data.weight || null);
+            }
 
-                await saveDayToCloud(date);
+            // Sync updated values with live Chart
+            analyticsChartInstance.data.labels = labels;
+            analyticsChartInstance.data.datasets[0].data = caloriesIn;
+            analyticsChartInstance.data.datasets[1].data = caloriesOut;
+            analyticsChartInstance.data.datasets[2].data = weights;
 
-                document.getElementById('exercise-name').value = '';
-                document.getElementById('exercise-details').value = '';
-                document.getElementById('exercise-calories').value = '';
-                
-                selectedDate = date;
-                document.getElementById('journal-date-picker').value = selectedDate;
-                
-                updateDashboard();
-                showModal("Logged Successfully", `Saved manually logged activity: "${name}"`);
-            });
+            // Redraw line graph
+            analyticsChartInstance.update();
+        }
 
-            document.getElementById('form-weight').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const date = document.getElementById('weight-date').value;
-                const weight = parseFloat(document.getElementById('weight-value').value);
-
-                appData.weight[date] = weight;
-                await saveDayToCloud(date);
-
-                document.getElementById('weight-value').value = '';
-                
-                selectedDate = date;
-                document.getElementById('journal-date-picker').value = selectedDate;
-                
-                updateDashboard();
-                showModal('Weight Updated', `Weight successfully updated to ${weight} lbs.`);
-            });
-
-            document.getElementById('chart-range').addEventListener('change', updateChart);
-
-            document.getElementById('btn-reset-data').addEventListener('click', async () => {
-                 if (!db || !userId) {
-                     appData = { food: {}, exercise: {}, weight: {} };
-                     updateDashboard();
-                     showModal('Data Cleared', 'All stored metrics and logs have been wiped successfully.');
-                     return;
-                 }
-
-                 // Erase all documents in Cloud matched by Rule 2
-                 updateCloudSyncBadge("Clearing Data...", "bg-red-100 text-red-600 animate-pulse");
-                 const daysCol = collection(db, 'artifacts', appId, 'users', userId, 'days');
-                 
-                 try {
-                     const snap = await getDocs(daysCol);
-                     const deletes = [];
-                     snap.forEach((documentDoc) => {
-                         deletes.push(deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'days', documentDoc.id)));
-                     });
-                     await Promise.all(deletes);
-                     appData = { food: {}, exercise: {}, weight: {} };
-                     selectedDate = today;
-                     document.getElementById('journal-date-picker').value = selectedDate;
-                     updateDashboard();
-                     showModal('Data Cleared', 'All stored metrics and logs have been wiped from both local memory and the cloud.');
-                 } catch (err) {
-                     console.error("Failure cleaning records:", err);
-                     showModal('Action Failed', 'Cloud deletion failed. Please verify your connection.');
-                 } finally {
-                     updateCloudSyncBadge("Cloud Connected", "bg-emerald-100 text-emerald-800 border border-emerald-200");
-                 }
-            });
-        });
+        // Clean safety HTML encoder
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
     </script>
 </body>
 </html>
